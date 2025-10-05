@@ -21,23 +21,22 @@ app.use("/api/reviews", reviewRoutes);
 app.use(notFound);
 app.use(errorHandler);
 const allowedOrigins = [
-process.env.CORS_ORIGIN,
+process.env.CORS_ORIGIN, // e.g. http://localhost:3000
 "http://localhost:3000",
-"http://localhost:5173", // future vite
+"http://localhost:5173",
 ].filter(Boolean);
 
-app.use(cors({
+const corsOptions = {
 origin: (origin, cb) => {
-if (!origin) return cb(null, true); // Postman/health etc.
+if (!origin) return cb(null, true); // Postman/health
 if (allowedOrigins.includes(origin)) return cb(null, true);
-return cb(new Error("Not allowed by CORS"), false);
+return cb(new Error("Not allowed by CORS"));
 },
 methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 allowedHeaders: ["Content-Type", "Authorization"],
-credentials: false, // token header bhej rahe ho, cookies nahi; isliye false rehne do
-}));
+credentials: false, // cookies nahi bhej rahe to false hi rakho
+};
 
-// Preflight handle
-app.options("*", cors());
+app.use(cors(corsOptions)); 
 
 export default app;
