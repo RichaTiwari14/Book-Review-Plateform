@@ -1,26 +1,59 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Container, Paper, Typography, TextField, Button, Stack } from "@mui/material";
 import { useAuth } from "../context/AuthContext";
+import { enqueueSnackbar } from "notistack";
+import { useNavigate, Link } from "react-router-dom";
+import useTitle from "../hooks/useTitle";
+import Page from "../components/Page";
+import { MotionPaper, MotionButton } from "../motion/Motion";
+import { pop } from "../motion/presets";
+import { useMotionSafe } from "../motion/presets";
+const schema = z.object({
+  name: z.string().min(2, "Name is too short"),
+  email: z.string().email("Invalid email"),
+  password: z.string().min(6, "Min 6 characters"),
+});
 
 export default function Signup() {
+    const safe = useMotionSafe();
+  useTitle("Sign up • Book Review");
   const { signup } = useAuth();
   const nav = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } =
+    useForm({ resolver: zodResolver(schema) });
 
-  const submit = async (e) => {
-    e.preventDefault();
-    await signup(form.name, form.email, form.password);
-    nav("/");
+  const onSubmit = async (values) => {
+    try {
+      await signup(values.name, values.email, values.password);
+      enqueueSnackbar("Welcome! Account created.", { variant: "success" });
+      nav("/");
+    } catch (e) {
+      enqueueSnackbar(e?.response?.data?.message || "Signup failed", { variant: "error" });
+    }
   };
 
   return (
-    <form onSubmit={submit} style={{ maxWidth: 360, margin: "30px auto" }}>
-      <h2>Signup</h2>
-      <input placeholder="Name" onChange={e=>setForm({...form, name:e.target.value})} />
-      <input placeholder="Email" onChange={e=>setForm({...form, email:e.target.value})} />
-      <input placeholder="Password" type="password" onChange={e=>setForm({...form, password:e.target.value})} />
-      <button type="submit">Create account</button>
-      <p>Have an account? <Link to="/login">Login</Link></p>
-    </form>
+    <Page>
+    <Container maxWidth="sm" sx={{ py: 6 }}>
+      <MotionPaper variants={pop(0.02)} {...safe} sx={{ p: 4 }}>
+        <Typography variant="h5" fontWeight={700} mb={2}>Create your account</Typography>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Stack spacing={2}>
+            <TextField label="Full name" {...register("name")} error={!!errors.name} helperText={errors.name?.message} />
+            <TextField label="Email" {...register("email")} error={!!errors.email} helperText={errors.email?.message} />
+            <TextField label="Password" type="password" {...register("password")} error={!!errors.password} helperText={errors.password?.message} />
+            <MotionButton type="submit" variant="contained" whileTap={{ scale: 0.98 }}>
+              {isSubmitting ? "Creating..." : "Create account"}
+            </MotionButton>
+            <Typography variant="body2">
+              Already have an account? <Link to="/login">Login</Link>
+            </Typography>
+          </Stack>
+        </form>
+      </MotionPaper>
+    </Container>
+    </Page>
   );
 }

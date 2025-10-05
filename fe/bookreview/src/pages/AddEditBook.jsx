@@ -1,16 +1,21 @@
 import { useEffect, useState } from "react";
+import { Container, Paper, Typography, TextField, Button, Stack } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../API/axios";
+import { enqueueSnackbar } from "notistack";
+import API from "../API/axios";
+import useTitle from "../hooks/useTitle";
 
 export default function AddEditBook() {
   const { id } = useParams();
   const nav = useNavigate();
   const editing = Boolean(id);
-  const [form, setForm] = useState({ title: "", author: "", description: "", genre: "", year: "" });
+  const [form, setForm] = useState({ title:"", author:"", description:"", genre:"", year:"" });
+
+  useTitle(editing ? "Edit Book • Book Review" : "Add Book • Book Review");
 
   useEffect(() => {
     if (editing) {
-      api.get(`/books/${id}`).then(({ data }) => {
+      API.get(`/books/${id}`).then(({data}) => {
         const { title, author, description, genre, year } = data;
         setForm({ title, author, description: description || "", genre: genre || "", year: year || "" });
       });
@@ -19,20 +24,31 @@ export default function AddEditBook() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (editing) await api.put(`/books/${id}`, form);
-    else await api.post(`/books`, form);
-    nav("/");
+    try {
+      if (editing) await API.put(`/books/${id}`, form);
+      else await API.post(`/books`, form);
+      enqueueSnackbar(editing ? "Book updated" : "Book created", { variant: "success" });
+      nav("/");
+    } catch (e) {
+      enqueueSnackbar(e?.response?.data?.message || "Failed", { variant: "error" });
+    }
   };
 
   return (
-    <form onSubmit={submit} style={{ maxWidth: 600, margin: "20px auto" }}>
-      <h2>{editing ? "Edit" : "Add"} Book</h2>
-      <input placeholder="Title" value={form.title} onChange={e=>setForm({...form, title: e.target.value})} />
-      <input placeholder="Author" value={form.author} onChange={e=>setForm({...form, author: e.target.value})} />
-      <input placeholder="Genre" value={form.genre} onChange={e=>setForm({...form, genre: e.target.value})} />
-      <input placeholder="Year" type="number" value={form.year} onChange={e=>setForm({...form, year: e.target.value})} />
-      <textarea placeholder="Description" value={form.description} onChange={e=>setForm({...form, description: e.target.value})} />
-      <button type="submit">{editing ? "Update" : "Create"}</button>
-    </form>
+    <Container maxWidth="sm" sx={{ py: 6 }}>
+      <Paper sx={{ p: 4 }}>
+        <Typography variant="h6" fontWeight={700} mb={2}>{editing ? "Edit" : "Add"} Book</Typography>
+        <form onSubmit={submit}>
+          <Stack spacing={2}>
+            <TextField label="Title" value={form.title} onChange={e=>setForm(s=>({...s, title: e.target.value}))} />
+            <TextField label="Author" value={form.author} onChange={e=>setForm(s=>({...s, author: e.target.value}))} />
+            <TextField label="Genre" value={form.genre} onChange={e=>setForm(s=>({...s, genre: e.target.value}))} />
+            <TextField label="Year" type="number" value={form.year} onChange={e=>setForm(s=>({...s, year: e.target.value}))} />
+            <TextField label="Description" multiline minRows={3} value={form.description} onChange={e=>setForm(s=>({...s, description: e.target.value}))} />
+            <Button type="submit" variant="contained">{editing ? "Update" : "Create"}</Button>
+          </Stack>
+        </form>
+      </Paper>
+    </Container>
   );
 }

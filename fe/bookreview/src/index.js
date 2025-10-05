@@ -3,11 +3,23 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from "./App.jsx";
 import reportWebVitals from './reportWebVitals';
-
+import ColorModeProvider from "./context/ColorModeContext";
+import { SnackbarProvider } from "notistack";
+import AuthProvider from "./context/AuthContext";
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
+    <ColorModeProvider>
+      <SnackbarProvider
+        maxSnack={3}
+        autoHideDuration={2500}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <AuthProvider>
     <App />
+    </AuthProvider>
+    </SnackbarProvider>
+    </ColorModeProvider>
   </React.StrictMode>
 );
 
